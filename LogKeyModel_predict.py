@@ -65,8 +65,8 @@ if __name__ == '__main__':
     print('model_path: {}'.format(model_path))
     test_normal_loader = generate('hdfs_test_normal')
     test_abnormal_loader = generate('hdfs_test_abnormal')
-    TP = 0
     FP = 0
+    FN = 0
     # Test the model
     start_time = time.time()
     with torch.no_grad():
@@ -81,6 +81,7 @@ if __name__ == '__main__':
                 if label not in predicted:
                     FP += 1
                     break
+    TP=len(test_normal_loader)-FP
     with torch.no_grad():
         for line in test_abnormal_loader:
             for i in range(len(line) - window_size):
@@ -91,11 +92,11 @@ if __name__ == '__main__':
                 output = model(seq)
                 predicted = torch.argsort(output, 1)[0][-num_candidates:]
                 if label not in predicted:
-                    TP += 1
+                    FN += 1
                     break
 
     # Compute precision, recall and F1-measure
-    FN = len(test_abnormal_loader) - TP
+    FP = len(test_abnormal_loader) - FN
     P = 100 * TP / (TP + FP)
     R = 100 * TP / (TP + FN)
     F1 = 2 * P * R / (P + R)
